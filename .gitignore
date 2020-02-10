@@ -2,6 +2,8 @@
 /test.txt
 /test.py
 /hack.py
+/sample.txt
+/sample.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
