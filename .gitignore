@@ -129,3 +129,6 @@ dmypy.json
 *.pdf
 *.xml
 *.txt
+
+# Do not store configurations to git
+*.json

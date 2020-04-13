@@ -7,14 +7,23 @@ Parse invoice data provided as PDF files to row based textual data
 # https://schoolofdata.org/2013/08/16/scraping-pdfs-with-python-and-the-scraperwiki-module/
 
 import argparse
-import os
+import json
 import scraperwiki
 import sys
 import xml.etree.ElementTree
+from os.path import basename, isfile, splitext
+
+
+def _default_cfgfile():
+    filebase, _ = splitext(basename(__file__))
+    return filebase + '.json'
+
+
+CFGFILE = _default_cfgfile()
 
 
 def read_data(file):
-    assert os.path.isfile(file), f"Missing file: {file}"
+    assert isfile(file), f"Missing file: {file}"
     with open(file, 'rb') as f:
         return f.read()
 
@@ -48,6 +57,19 @@ def scrape(data):
     return result
 
 
+def read_cfg(file):
+    """Read configuration file and return list of (start,end) tuples """
+    result = []
+    if isfile(file):
+        with open(file) as f:
+            cfg = json.load(f)
+        for entry in cfg:
+            if 'start' in entry:
+                filter = (entry['start'], entry.get('end', None))
+                result.append(filter)
+    return result
+
+
 def create_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -61,6 +83,10 @@ def create_parser():
         '-e', '--end', '-t', '--to',
         help='Print data ending to row containing the text',
         default='')
+    parser.add_argument(
+        '-c', '--config',
+        help='If --start not defined use configuration',
+        default=CFGFILE)
     return parser
 
 
@@ -77,12 +103,16 @@ def filter_output(rows, start, end):
             end_found = True if end in row else False
 
 
-
 def main():
     parser = create_parser()
     args = parser.parse_args()
     rows = scrape(read_data(args.path))
-    filter_output(rows, args.start, args.end)
+    if args.start:
+        filter_output(rows, args.start, args.end)
+    else:
+        configs = read_cfg(args.config)
+        for cfg in configs:
+            filter_output(rows, cfg[0], cfg[1])
 
 
 if __name__ == "__main__":
